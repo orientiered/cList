@@ -215,10 +215,12 @@ listIterator_t listPopFront(cList_t *list) {
 
     int32_t oldHead = list->head;
     list->head = list->next[list->head];
+    list->prev[list->head] = NULL_LIST_IT;
     list->prev[oldHead] = INVALID_LIST_IT;
     list->next[oldHead] = list->free;
     list->free = oldHead;
 
+    if (list->size == 1) list->tale = NULL_LIST_IT;
     list->size--;
 
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
@@ -238,10 +240,13 @@ listIterator_t listPopBack(cList_t *list) {
 
     int32_t oldTale = list->tale;
     list->tale = list->prev[list->tale];
+    list->next[list->tale] = NULL_LIST_IT;
+
     list->prev[oldTale] = INVALID_LIST_IT;
     list->next[oldTale] = list->free;
     list->free = oldTale;
 
+    if (list->size == 1) list->head = NULL_LIST_IT;
     list->size--;
 
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);

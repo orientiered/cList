@@ -19,6 +19,23 @@ int main() {
     for (listIterator_t it = listFront(&list); it != NULL_LIST_IT; it = listNext(&list, it)) {
         printf("it = %ld: %d\n", it, *(int *)listGet(&list, it));
     }
+
+    listPopBack(&list);
+    for (listIterator_t it = listFront(&list); it != NULL_LIST_IT; it = listNext(&list, it)) {
+        printf("it = %ld: %d\n", it, *(int *)listGet(&list, it));
+    }
+
+    listPopBack(&list);
+    for (listIterator_t it = listFront(&list); it != NULL_LIST_IT; it = listNext(&list, it)) {
+        printf("it = %ld: %d\n", it, *(int *)listGet(&list, it));
+    }
+
+    listPopBack(&list);
+    for (listIterator_t it = listFront(&list); it != NULL_LIST_IT; it = listNext(&list, it)) {
+        printf("it = %ld: %d\n", it, *(int *)listGet(&list, it));
+    }
+
+    listPopBack(&list);
     listDtor(&list);
 
     logClose();
