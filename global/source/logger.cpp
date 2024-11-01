@@ -1,14 +1,24 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <stdarg.h>
 
 #include "error_debug.h"
 #include "logger.h"
 
-static FILE *logFile = NULL;
-static const char *logFileName = "log.txt";
-static enum LogLevel globalLogLevel = L_ZERO;
+typedef struct {
+    char          logFileName[128];
+    FILE*         logFile;
+    enum LogLevel logLevel;
+    enum LogMode  logMode;
+} logState_t;
+
+static logState_t logger = {.logFileName    = "log.txt",
+                            .logFile        = NULL,
+                            .logLevel       = L_ZERO,
+                            .logMode        = L_TXT_MODE};
+
 
 
 static struct tm getTime();
@@ -21,52 +31,94 @@ static struct tm getTime() {
 }
 
 static void logTime() {
-    MY_ASSERT(logFile, abort());
+    MY_ASSERT(logger.logFile, abort());
     struct tm currentTime = getTime();
-    fprintf(logFile, "[%.2d.%.2d.%d %.2d:%.2d:%.2d] ",
+    fprintf(logger.logFile, "[%.2d.%.2d.%d %.2d:%.2d:%.2d] ",
         currentTime.tm_mday, currentTime.tm_mon, currentTime.tm_year + 1900,
         currentTime.tm_hour, currentTime.tm_min, currentTime.tm_sec);
 }
 
-enum status logOpen() {
-    logFile = fopen(logFileName, "w");
-    if (!logFile) return ERROR;
-    fprintf(logFile, "------------------------------------------\n");
+static enum status constructFileName(const char *fileName) {
+    strcpy(logger.logFileName, "logs/");
+    if (fileName != NULL && strlen(fileName) > 0) {
+        if (strchr(fileName, '/') != NULL) {
+            fprintf(stderr, "Making folders isn't supported\n");
+            return ERROR;
+        }
+
+        const char *lastDot = strrchr(fileName, '.');
+        if (lastDot != NULL)
+            strncat(logger.logFileName, fileName, lastDot - fileName);
+        else
+            strcat(logger.logFileName, fileName);
+
+    } else
+        strcat(logger.logFileName, "log");
+
+    if (logger.logMode == L_TXT_MODE)
+        strcat(logger.logFileName, ".txt");
+    else if (logger.logMode == L_HTML_MODE)
+        strcat(logger.logFileName, ".html");
+
+    return SUCCESS;
+}
+
+enum status logOpen(const char *fileName, enum LogMode mode) {
+    system("mkdir -p logs");
+
+    logger.logMode = mode;
+    if ((mode != L_TXT_MODE) && (mode != L_HTML_MODE)) {
+        fprintf(stderr, "Unknown logging mode\n");
+        return ERROR;
+    }
+
+    if (constructFileName(fileName) != SUCCESS)
+        return ERROR;
+
+    logger.logFile = fopen(logger.logFileName, "w");
+    if (!logger.logFile) return ERROR;
+
+    if (mode == L_HTML_MODE)
+        fprintf(logger.logFile, "<pre>");
+
+    fprintf(logger.logFile, "------------------------------------------\n");
     logTime();
-    fprintf(logFile, "Starting logging session\n");
+    fprintf(logger.logFile, "Starting logging session\n");
     return SUCCESS;
 }
 
 enum status logDisableBuffering() {
-    if (!logFile) return ERROR;
-    setbuf(logFile, NULL); //disabling buffering
+    if (!logger.logFile) return ERROR;
+    setbuf(logger.logFile, NULL); //disabling buffering
     return SUCCESS;
 }
 
 enum status logClose() {
-    if (!logFile) return ERROR;
+    if (!logger.logFile) return ERROR;
 
 
     logTime();
-    fprintf(logFile, "Ending logging session \n");
-    fprintf(logFile, "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n");
+    fprintf(logger.logFile, "Ending logging session \n");
+    fprintf(logger.logFile, "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n");
 
-    fclose(logFile);
+    if (logger.logMode == L_HTML_MODE)
+        fprintf(logger.logFile, "</pre>");
+    fclose(logger.logFile);
 
     return SUCCESS;
 }
 
 void setLogLevel(enum LogLevel level) {
-    globalLogLevel = level;
+    logger.logLevel = level;
 }
 
 enum LogLevel getLogLevel() {
-    return globalLogLevel;
+    return logger.logLevel;
 }
 
 enum status logPrintWithTime(enum LogLevel level, bool copyToStderr, const char* fmt, ...) {
-    MY_ASSERT(logFile, abort());
-    if (level > globalLogLevel)
+    MY_ASSERT(logger.logFile, abort());
+    if (level > logger.logLevel)
         return SUCCESS;
 
     va_list args;
@@ -77,15 +129,15 @@ enum status logPrintWithTime(enum LogLevel level, bool copyToStderr, const char*
     }
     va_start(args, fmt);
     logTime();
-    vfprintf(logFile, fmt, args);
+    vfprintf(logger.logFile, fmt, args);
 
     va_end(args);
     return SUCCESS;
 }
 
 enum status logPrint(enum LogLevel level, bool copyToStderr, const char* fmt, ...) {
-    MY_ASSERT(logFile, abort());
-    if (level > globalLogLevel)
+    MY_ASSERT(logger.logFile, abort());
+    if (level > logger.logLevel)
         return SUCCESS;
 
     va_list args;
@@ -95,7 +147,7 @@ enum status logPrint(enum LogLevel level, bool copyToStderr, const char* fmt, ..
         vfprintf(stderr, fmt, args);
     }
     va_start(args, fmt);
-    vfprintf(logFile, fmt, args);
+    vfprintf(logger.logFile, fmt, args);
 
     va_end(args);
     return SUCCESS;

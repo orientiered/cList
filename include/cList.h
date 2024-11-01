@@ -35,8 +35,6 @@ typedef struct cList {
     int32_t *next;
     int32_t *prev;
 
-    int32_t head;
-    int32_t tale;
     int32_t free;
 } cList_t;
 

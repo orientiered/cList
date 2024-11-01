@@ -45,8 +45,10 @@ enum listStatus listCtor(cList_t *list, size_t elemSize) {
     memcpy(list->data, &LIST_POISON, elemSize);
     list->next[list->reserved] = 0; // next(last) = 0
 
-    list->head    = 0;
-    list->tale    = 0;
+    list->next[0] = 0;
+    list->prev[0] = 0;
+    // list->head    = 0;
+    // list->tale    = 0;
     list->free    = 1;
 
     LIST_ASSERT(list);
@@ -73,8 +75,8 @@ enum listStatus listClear(cList_t *list) {
     logPrint(L_DEBUG, 0, "Clearing list [%p]\n", list);
 
     list->size = 0;
-    list->head = 0;
-    list->tale = 0;
+    list->next[0] = 0;
+    list->prev[0] = 0;
     list->free = 1;
     for (int32_t idx = 1; idx <= list->reserved; idx++) {
         list->next[idx] = idx + 1; //filling free sequence
@@ -92,14 +94,14 @@ listIterator_t  listFront(cList_t *list) {
     MY_ASSERT(list, abort());
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
-    return (listIterator_t) list->head;
+    return (listIterator_t) list->next[0];
 }
 
 listIterator_t  listBack(cList_t *list) {
     MY_ASSERT(list, abort());
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
-    return (listIterator_t) list->tale;
+    return (listIterator_t) list->prev[0];
 }
 
 listIterator_t  listNext(cList_t *list, listIterator_t iter) {
@@ -138,33 +140,10 @@ listIterator_t  listPushFront(cList_t *list, const void *elem) {
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Pushing element[%p] to front of list[%p]\n", elem, list);
-    if (list->size == list->reserved) {
-        if (listRealloc(list) != LIST_SUCCESS)
-            return INVALID_LIST_IT;
-    }
-
-    if (list->free == 0) {
-        logPrint(L_ZERO, 1, "No memory to push element\n");
-        return INVALID_LIST_IT;
-    }
-
-    int32_t newHead = list->free;
-    list->free = list->next[list->free];
-
-    if (list->head != NULL_LIST_IT)
-        list->prev[list->head] = newHead;
-    else
-        list->tale = newHead;
-
-    list->prev[newHead] = 0;
-    list->next[newHead] = list->head;
-    memcpy( (char *)list->data + list->elemSize * newHead, elem, list->elemSize);
-
-    list->head = newHead;
-    list->size++;
+    listInsertAfter(list, 0, elem);
 
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
-    return list->head;
+    return list->next[0];
 }
 
 listIterator_t  listPushBack(cList_t *list, const void *elem) {
@@ -173,33 +152,10 @@ listIterator_t  listPushBack(cList_t *list, const void *elem) {
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Pushing element[%p] to back of list[%p]\n", elem, list);
-    if (list->size == list->reserved) {
-        if (listRealloc(list) != LIST_SUCCESS)
-            return INVALID_LIST_IT;
-    }
-
-    if (list->free == 0) {
-        logPrint(L_ZERO, 1, "No memory to push element\n");
-        return INVALID_LIST_IT;
-    }
-
-    int32_t newTale = list->free;
-    list->free = list->next[list->free];
-
-    if (list->tale != NULL_LIST_IT)
-        list->next[list->tale] = newTale;
-    else
-        list->head = newTale;
-
-    list->next[newTale] = 0;
-    list->prev[newTale] = list->tale;
-    memcpy( (char *)list->data + list->elemSize * newTale, elem, list->elemSize);
-
-    list->tale = newTale;
-    list->size++;
+    listInsertAfter(list, list->prev[0], elem);
 
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
-    return list->tale;
+    return list->prev[0];
 }
 
 listIterator_t listPopFront(cList_t *list) {
@@ -207,24 +163,12 @@ listIterator_t listPopFront(cList_t *list) {
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Popping element at front of list[%p]\n", list);
-
-    if (list->size == 0) {
-        logPrint(L_ZERO, 1, "Attempt to pop element from empty list[%p]\n", list);
+    if (listRemove(list, list->next[0]) != LIST_SUCCESS) {
         return INVALID_LIST_IT;
     }
 
-    int32_t oldHead = list->head;
-    list->head = list->next[list->head];
-    list->prev[list->head] = NULL_LIST_IT;
-    list->prev[oldHead] = INVALID_LIST_IT;
-    list->next[oldHead] = list->free;
-    list->free = oldHead;
-
-    if (list->size == 1) list->tale = NULL_LIST_IT;
-    list->size--;
-
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
-    return list->head;
+    return list->next[0];
 }
 
 listIterator_t listPopBack(cList_t *list) {
@@ -232,30 +176,16 @@ listIterator_t listPopBack(cList_t *list) {
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Popping element at back of list[%p]\n", list);
-
-    if (list->size == 0) {
-        logPrint(L_ZERO, 1, "Attempt to pop element from empty list[%p]\n", list);
+    if (listRemove(list, list->prev[0]) != LIST_SUCCESS) {
         return INVALID_LIST_IT;
     }
 
-    int32_t oldTale = list->tale;
-    list->tale = list->prev[list->tale];
-    list->next[list->tale] = NULL_LIST_IT;
-
-    list->prev[oldTale] = INVALID_LIST_IT;
-    list->next[oldTale] = list->free;
-    list->free = oldTale;
-
-    if (list->size == 1) list->head = NULL_LIST_IT;
-    list->size--;
-
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
-    return list->tale;
+    return list->prev[0];
 }
 
 enum listStatus listRemove(cList_t *list, listIterator_t iter) {
     MY_ASSERT(list, abort());
-    MY_ASSERT(iter, abort());
     LIST_ASSERT(list);
 
     if (checkIfInvalidIterator(list, iter)) {
@@ -272,11 +202,15 @@ enum listStatus listRemove(cList_t *list, listIterator_t iter) {
         return LIST_ERROR;
     }
 
-    int32_t oldHead = list->head;
-    list->head = list->next[list->head];
-    list->prev[oldHead] = INVALID_LIST_IT;
-    list->next[oldHead] = list->free;
-    list->free = oldHead;
+    int32_t nextElem = list->next[iter],
+            prevElem = list->prev[iter];
+
+    list->next[prevElem] = nextElem;
+    list->prev[nextElem] = prevElem;
+
+    list->prev[iter] = INVALID_LIST_IT;
+    list->next[iter] = list->free;
+    list->free = iter;
 
     list->size--;
 
@@ -291,18 +225,50 @@ listIterator_t listFind(cList_t *list, const void *elem) {
 
 /// @brief insert After iterator, return iterator to inserted elem
 listIterator_t listInsertAfter(cList_t *list, listIterator_t iter, const void *elem) {
-    return INVALID_LIST_IT;
+    MY_ASSERT(list, abort());
+    MY_ASSERT(elem, abort());
+    LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
+
+    if (checkIfInvalidIterator(list, iter)) {
+        logPrint(L_DEBUG, 0, "Invalid listIterator_t passed in listInsertAfter: %ld\n"
+                             "For list[%p] maximum iterator is %ld\n",
+                             iter, list, list->reserved);
+        return INVALID_LIST_IT;
+    }
+
+    if (list->free == NULL_LIST_IT)
+        listRealloc(list);
+
+    int32_t newElem = list->free;
+    list->free = list->next[list->free];
+
+    list->prev[newElem] = iter;
+    list->next[newElem] = list->next[iter];
+    list->prev[list->next[iter]] = newElem;
+    list->next[iter] = newElem;
+
+    list->size++;
+
+    memcpy(listGet(list, newElem), elem, list->elemSize);
+
+    LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
+    return list->next[iter];
 }
 
 /// @brief insert Before iterator, return iterator to inserted elem
 listIterator_t listInsertBefore(cList_t *list, listIterator_t iter, const void *elem) {
-    return INVALID_LIST_IT;
+    MY_ASSERT(list, abort());
+    MY_ASSERT(elem, abort());
+    LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
+
+    return listInsertAfter(list, list->prev[iter], elem);
 }
 
 void *listGet(cList_t *list, listIterator_t iter) {
     MY_ASSERT(list, abort());
     MY_ASSERT(iter, abort());
-    //listVerify(list);
+    LIST_CUSTOM_ASSERT(list, NULL);
+
     if (checkIfInvalidIterator(list, iter)) {
         logPrint(L_DEBUG, 0, "Invalid listIterator_t passed in listGet: %ld\n"
                              "For list[%p] maximum iterator is %ld\n",
@@ -342,25 +308,35 @@ enum listStatus listVerify(cList_t *list) {
         logPrint(L_ZERO, 1, "Data isn't allocated in list [%p]\n", list);
         return LIST_MEMORY_ERROR;
     }
+    if (!list->next && list->reserved >= 0) {
+        logPrint(L_ZERO, 1, "Next isn't allocated in list [%p]\n", list);
+        return LIST_MEMORY_ERROR;
+    }
+    if (!list->prev && list->reserved >= 0) {
+        logPrint(L_ZERO, 1, "Prev isn't allocated in list [%p]\n", list);
+        return LIST_MEMORY_ERROR;
+    }
 
     /*CHECKING OBVIOUS HEAD, TALE AND FREE ERRORS*/
-    if (checkIfInvalidIterator(list, list->head)) {
-        logPrint(L_ZERO, 1, "Head iterator in list [%p] is invalid: %ld\n", list, list->head);
+    int32_t head = list->next[0],
+            tale = list->prev[0];
+    if (checkIfInvalidIterator(list, head)){
+        logPrint(L_ZERO, 1, "Head iterator in list [%p] is invalid: %ld\n", list, head);
         return LIST_HEAD_ERROR;
     }
-    if (list->prev[list->head] != 0) {
+    if (list->prev[head] != 0) {
         logPrint(L_ZERO, 1, "Head iterator in list [%p] is misplaced: prev[head] = %ld != 0\n",
-                 list, list->prev[list->head]);
+                 list, list->prev[head]);
         return LIST_HEAD_ERROR;
     }
 
-    if (checkIfInvalidIterator(list, list->tale)) {
-        logPrint(L_ZERO, 1, "Tale iterator in list [%p] is invalid: %ld\n", list, list->tale);
+    if (checkIfInvalidIterator(list, tale)) {
+        logPrint(L_ZERO, 1, "Tale iterator in list [%p] is invalid: %ld\n", list, tale);
         return LIST_TALE_ERROR;
     }
-    if (list->next[list->tale] != 0) {
+    if (list->next[tale] != 0) {
         logPrint(L_ZERO, 1, "Tale iterator in list [%p] is misplaced: next[tale] = %ld != 0\n",
-                 list, list->next[list->tale]);
+                 list, list->next[tale]);
         return LIST_TALE_ERROR;
     }
 
@@ -376,9 +352,17 @@ enum listStatus listVerify(cList_t *list) {
 
     /*CHECKING NEXT, FREE AND PREV ON LINKING ERRORS (FULL ELEMENT COVERAGE AND ABSENCE OF CYCLES)*/
     int32_t visitedCounter = 0;
-    listIterator_t iter = list->head;
+    listIterator_t iter = head;
     //list->reserved + 5 to be sure that verifier has found cycle
     for (;iter != NULL_LIST_IT && visitedCounter < list->reserved + 5;iter = list->next[iter]) {
+        if (list->prev[list->next[iter]] != iter) {
+            logPrint(L_ZERO, 1, "prev[next[iter]] != iter in list [%p]:\n"
+                                "\titer = %d\n"
+                                "\tnext[iter] = %d\n"
+                                "\tprev[next[iter]] = %d != %d\n",
+                                list, iter, list->next[iter], list->prev[list->next[iter]], iter);
+            return LIST_NEXT_LINK_ERROR;
+        }
         visitedCounter++;
     }
     if (visitedCounter > list->reserved) {
@@ -392,7 +376,7 @@ enum listStatus listVerify(cList_t *list) {
     /*checking free*/
     iter = list->free;
     for (;iter != NULL_LIST_IT && visitedCounter < list->reserved + 5;iter = list->next[iter]) {
-        logPrint(L_EXTRA, 0, "it = %d\n", iter);
+        //logPrint(L_EXTRA, 0, "it = %d\n", iter);
         if (list->prev[iter] != INVALID_LIST_IT) {
             logPrint(L_ZERO, 1, "Found previous element for element from free sequence in list [%p]\n", list);
             return LIST_FREE_LINK_ERROR;
@@ -409,7 +393,7 @@ enum listStatus listVerify(cList_t *list) {
     }
 
     /*checking prev*/
-    iter = list->tale;
+    iter = tale;
     visitedCounter = 0;
     for (; iter != NULL_LIST_IT && visitedCounter < list->reserved + 5; iter = list->prev[iter]) {
         visitedCounter++;
@@ -426,5 +410,11 @@ enum listStatus listVerify(cList_t *list) {
 }
 
 enum listStatus listDump(cList_t *list) {
+    MY_ASSERT(list, abort());
+    if (getLogLevel() < L_DEBUG)
+        return LIST_SUCCESS;
+
+    logPrint(L_ZERO, 0, "-------cList_t [%p] dump--------", list);
+    logPrint(L_ZERO, 0, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", list);
     return LIST_SUCCESS;
 }

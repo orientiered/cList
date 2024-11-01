@@ -6,7 +6,7 @@
 #include "cList.h"
 
 int main() {
-    logOpen();
+    logOpen("log.txt", L_HTML_MODE);
     setLogLevel(L_EXTRA);
     logDisableBuffering();
     cList_t list = {0};

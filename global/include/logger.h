@@ -12,8 +12,13 @@ enum LogLevel {
     L_EXTRA     ///< Debug++
 };
 
+enum LogMode {
+    L_TXT_MODE,
+    L_HTML_MODE
+};
+
 /// @brief Open log file
-enum status logOpen();
+enum status logOpen(const char *fileName, enum LogMode mode);
 
 /// @brief Disables buffering
 //! Warning: makes write crazy slow
