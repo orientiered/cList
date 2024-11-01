@@ -79,7 +79,7 @@ enum status logOpen(const char *fileName, enum LogMode mode) {
     if (!logger.logFile) return ERROR;
 
     if (mode == L_HTML_MODE)
-        fprintf(logger.logFile, "<pre>");
+        fprintf(logger.logFile, "<pre>\n");
 
     fprintf(logger.logFile, "------------------------------------------\n");
     logTime();
@@ -90,6 +90,12 @@ enum status logOpen(const char *fileName, enum LogMode mode) {
 enum status logDisableBuffering() {
     if (!logger.logFile) return ERROR;
     setbuf(logger.logFile, NULL); //disabling buffering
+    return SUCCESS;
+}
+
+enum status logFlush() {
+    if (!logger.logFile) return ERROR;
+    fflush(logger.logFile);
     return SUCCESS;
 }
 

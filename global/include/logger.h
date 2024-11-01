@@ -24,6 +24,9 @@ enum status logOpen(const char *fileName, enum LogMode mode);
 //! Warning: makes write crazy slow
 enum status logDisableBuffering();
 
+/// @brief Flush all changes to file
+enum status logFlush();
+
 /// @brief Close log file
 enum status logClose();
 

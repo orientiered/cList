@@ -7,6 +7,8 @@
 #include "logger.h"
 #include "cList.h"
 
+const size_t INTERNAL_BUFFER_SIZE = 100;
+
 static bool checkIfInvalidIterator(cList_t *list, listIterator_t iter) {
     MY_ASSERT(list, abort());
     return (iter < 0 || iter > list->reserved);
@@ -47,8 +49,6 @@ enum listStatus listCtor(cList_t *list, size_t elemSize) {
 
     list->next[0] = 0;
     list->prev[0] = 0;
-    // list->head    = 0;
-    // list->tale    = 0;
     list->free    = 1;
 
     LIST_ASSERT(list);
@@ -410,11 +410,51 @@ enum listStatus listVerify(cList_t *list) {
 }
 
 enum listStatus listDump(cList_t *list) {
+    static size_t imgNumber = 0;
+    char buffer[INTERNAL_BUFFER_SIZE] = "";
+
     MY_ASSERT(list, abort());
     if (getLogLevel() < L_DEBUG)
         return LIST_SUCCESS;
 
-    logPrint(L_ZERO, 0, "-------cList_t [%p] dump--------", list);
-    logPrint(L_ZERO, 0, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", list);
+    logPrint(L_ZERO, 0, "-------cList_t [%p] dump--------\n", list);
+
+    system("mkdir -p logs/img logs/dot");
+
+    sprintf(buffer, "logs/dot/listDump_%zu.dot", imgNumber);
+    FILE *dotFile = fopen(buffer, "w");
+    fprintf(dotFile, "digraph {\n");
+    fprintf(dotFile, "rankdir = LR;\n");
+
+    for (int32_t idx = 0; idx <= list->reserved; idx++) {
+        fprintf(dotFile, "node%zu [shape=Mrecord, label=\"elem #%zu | next = %d | prev = %d\",",
+                idx, idx, list->next[idx], list->prev[idx]);
+
+        if (list->prev[idx] == -1)
+            fprintf(dotFile, "color=\"#AAAAAA\"];\n");
+        else
+            fprintf(dotFile, "color=\"#000000\"];\n");
+    }
+
+    for (int32_t idx = 0; idx <= list->reserved; idx++) {
+        fprintf(dotFile, "node%zu -> node%zu [color=\"#00000000\"]", idx, idx+1);
+        if (list->prev[idx] == -1)
+            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#AAAAAA\"]", idx, list->next[idx]);
+        else
+            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#20EE20\"]", idx, list->next[idx]);
+    }
+
+    fprintf(dotFile, "}\n");
+    fclose(dotFile);
+
+    sprintf(buffer, "dot logs/dot/listDump_%zu.dot -Tpng -o logs/img/dumpImg_%zu.png",
+            imgNumber, imgNumber);
+    system(buffer);
+
+    logPrint(L_ZERO, 0, "<img src=\"img/dumpImg_%zu.png\" width=87%%>", imgNumber);
+    logPrint(L_ZERO, 0, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n", list);
+    logFlush();
+
+    imgNumber++;
     return LIST_SUCCESS;
 }
