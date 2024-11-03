@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 const int64_t LIST_POISON = 0x0FACEFABDDFAC;
-const size_t MIN_LIST_RESERVED = 10;
+const size_t MIN_LIST_RESERVED = 4;
 const size_t SIZE_MULTIPLIER = 2;
 enum listStatus {
     LIST_SUCCESS = 0,
@@ -29,7 +29,7 @@ typedef struct cList {
     int32_t  size;
     int32_t  reserved;
 
-    int32_t  elemSize;
+    size_t   elemSize;
     void    *data;
 
     int32_t *next;

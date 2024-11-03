@@ -17,7 +17,51 @@ static bool checkIfInvalidIterator(cList_t *list, listIterator_t iter) {
 static enum listStatus listRealloc(cList_t *list) {
     MY_ASSERT(list, abort());
     LIST_ASSERT(list);
-    //TODO: reallocation
+    logPrint(L_DEBUG, 0, "Reallocating list [%p]: %d -> %d\n", list, list->reserved, list->reserved * 2);
+
+    // + 1 because NULL list element isn't counted
+    size_t newCapacity = (list->reserved * 2 + 1);
+
+    int32_t *newNext = (int32_t *) realloc(list->next, sizeof(int32_t) * newCapacity);
+    if (!newNext) {
+        logPrint(L_ZERO, 1, "Reallocation of cList_t[%p]::next[%p] failed\n", list, list->next);
+        return LIST_MEMORY_ERROR;
+    }
+    list->next = newNext;
+
+    int32_t *newPrev = (int32_t *) realloc(list->prev, sizeof(int32_t) * newCapacity);
+    if (!newPrev) {
+        logPrint(L_ZERO, 1, "Reallocation of cList_t[%p]::prev[%p] failed\n", list, list->prev);
+        return LIST_MEMORY_ERROR;
+    }
+    list->prev = newPrev;
+
+    void *newData = realloc(list->data, list->elemSize * newCapacity);
+    if (!newData) {
+        logPrint(L_ZERO, 1, "Reallocation of cList_t[%p]::data[%p] failed\n", list, list->data);
+        return LIST_MEMORY_ERROR;
+    }
+    list->data = newData;
+
+    for (int32_t idx = list->reserved + 1; idx <= list->reserved * 2; idx++) {
+        list->prev[idx] = INVALID_LIST_IT;
+        list->next[idx] = idx + 1; //free elements
+        memcpy((char *)list->data + list->elemSize*idx, &LIST_POISON, list->elemSize);
+    }
+
+    list->next[list->reserved * 2] = NULL_LIST_IT;
+
+    if (list->free == NULL_LIST_IT)
+        list->free = list->reserved + 1;
+    else {
+        listIterator_t it = list->free;
+        while (list->next[it] != NULL_LIST_IT)
+            it = list->next[it];
+        list->next[it] = list->reserved + 1;
+    }
+    list->reserved *= 2;
+
+    LIST_ASSERT(list);
     return LIST_SUCCESS;
 }
 
@@ -450,7 +494,7 @@ enum listStatus listDump(cList_t *list) {
     fprintf(dotFile, "label = \"Elements\";\n");
     fprintf(dotFile, "bgcolor=\"#ccfdf9\";\n");
     for (int32_t idx = 1; idx <= list->reserved; idx++) {
-        fprintf(dotFile, "node%zu [shape=Mrecord, style=filled,weight=10, label=\"elem #%zu | next = %d | prev = %d | val = %d\",",
+        fprintf(dotFile, "node%d [shape=Mrecord, style=filled,weight=10, label=\"elem #%d | next = %d | prev = %d | val = %d\",",
                 idx, idx, list->next[idx], list->prev[idx], *(int32_t *)((char *)list->data + idx * list->elemSize) );
 
         if (list->prev[idx] == -1)
@@ -462,13 +506,13 @@ enum listStatus listDump(cList_t *list) {
 
     for (int32_t idx = 0; idx <= list->reserved; idx++) {
         if (idx != list->reserved)
-            fprintf(dotFile, "node%zu -> node%zu [color=\"#00000000\"]", idx, idx+1);
+            fprintf(dotFile, "node%d -> node%d [color=\"#00000000\"]", idx, idx+1);
 
         if (list->prev[idx] == -1)
-            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#AAAAAA\"]\n", idx, list->next[idx]);
+            fprintf(dotFile, "node%d -> node%d [constraint=false,color=\"#AAAAAA\"]\n", idx, list->next[idx]);
         else {
-            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#20EE20\"]\n", idx, list->next[idx]);
-            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#FF4420\"]\n", idx, list->prev[idx]);
+            fprintf(dotFile, "node%d -> node%d [constraint=false,color=\"#20EE20\"]\n", idx, list->next[idx]);
+            fprintf(dotFile, "node%d -> node%d [constraint=false,color=\"#FF4420\"]\n", idx, list->prev[idx]);
         }
 
     }
