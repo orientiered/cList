@@ -84,6 +84,7 @@ enum listStatus listClear(cList_t *list) {
         memcpy((char *)list->data + list->elemSize * idx, &LIST_POISON, list->elemSize);
     }
     memcpy(list->data, &LIST_POISON, list->elemSize);
+    list->next[list->reserved] = 0;
 
     LIST_ASSERT(list);
     logPrint(L_DEBUG, 0, "Cleared list [%p]\n", list);
@@ -202,6 +203,7 @@ enum listStatus listRemove(cList_t *list, listIterator_t iter) {
         return LIST_ERROR;
     }
 
+    memcpy((char *)list->data + iter * list->elemSize, &LIST_POISON, list->elemSize);
     int32_t nextElem = list->next[iter],
             prevElem = list->prev[iter];
 
@@ -220,7 +222,15 @@ enum listStatus listRemove(cList_t *list, listIterator_t iter) {
 
 
 listIterator_t listFind(cList_t *list, const void *elem) {
-    return INVALID_LIST_IT;
+    MY_ASSERT(list, abort());
+    MY_ASSERT(elem, abort());
+    LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
+
+    listIterator_t iter = list->next[0];
+    while (iter != NULL_LIST_IT && memcmp(listGet(list, iter), elem, list->elemSize) != 0)
+        iter = listNext(list, iter);
+
+    return (iter == NULL_LIST_IT) ? INVALID_LIST_IT : iter;
 }
 
 /// @brief insert After iterator, return iterator to inserted elem
@@ -228,6 +238,8 @@ listIterator_t listInsertAfter(cList_t *list, listIterator_t iter, const void *e
     MY_ASSERT(list, abort());
     MY_ASSERT(elem, abort());
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
+
+    logPrint(L_EXTRA, 0, "Inserting elem[%p] in list[%p] after [%d] iterator\n", elem, list, iter);
 
     if (checkIfInvalidIterator(list, iter)) {
         logPrint(L_DEBUG, 0, "Invalid listIterator_t passed in listInsertAfter: %ld\n"
@@ -417,7 +429,7 @@ enum listStatus listDump(cList_t *list) {
     if (getLogLevel() < L_DEBUG)
         return LIST_SUCCESS;
 
-    logPrint(L_ZERO, 0, "-------cList_t [%p] dump--------\n", list);
+    logPrintColor(L_ZERO, "#FF0000", "#CCCCCC", "-------cList_t [%p] dump--------\n", list);
 
     system("mkdir -p logs/img logs/dot");
 
@@ -425,34 +437,51 @@ enum listStatus listDump(cList_t *list) {
     FILE *dotFile = fopen(buffer, "w");
     fprintf(dotFile, "digraph {\n");
     fprintf(dotFile, "rankdir = LR;\n");
+    fprintf(dotFile, "graph [splines=spline];\n");
 
-    for (int32_t idx = 0; idx <= list->reserved; idx++) {
-        fprintf(dotFile, "node%zu [shape=Mrecord, label=\"elem #%zu | next = %d | prev = %d\",",
-                idx, idx, list->next[idx], list->prev[idx]);
+    fprintf(dotFile, "nodeHeader [shape=Mrecord, weight=10, label=\"Info | size = %d | capacity = %d\"]\n",
+            list->size, list->reserved);
+
+    fprintf(dotFile, "node0 [shape=Mrecord, weight=10, label=\"NULL_ELEMENT | (head) next = %d | (tale) prev = %d\"",
+            list->next[0], list->prev[0]);
+    fprintf(dotFile, "color=\"#000000\"];\n");
+
+    fprintf(dotFile, "subgraph cluster_Data {\n");
+    fprintf(dotFile, "label = \"Elements\";\n");
+    fprintf(dotFile, "bgcolor=\"#ccfdf9\";\n");
+    for (int32_t idx = 1; idx <= list->reserved; idx++) {
+        fprintf(dotFile, "node%zu [shape=Mrecord, style=filled,weight=10, label=\"elem #%zu | next = %d | prev = %d | val = %d\",",
+                idx, idx, list->next[idx], list->prev[idx], *(int32_t *)((char *)list->data + idx * list->elemSize) );
 
         if (list->prev[idx] == -1)
-            fprintf(dotFile, "color=\"#AAAAAA\"];\n");
+            fprintf(dotFile, "fillcolor=\"#AAAAAA\"];\n");
         else
-            fprintf(dotFile, "color=\"#000000\"];\n");
+            fprintf(dotFile, "fillcolor=\"white\"];\n");
     }
+    fprintf(dotFile, "}\n");
 
     for (int32_t idx = 0; idx <= list->reserved; idx++) {
-        fprintf(dotFile, "node%zu -> node%zu [color=\"#00000000\"]", idx, idx+1);
+        if (idx != list->reserved)
+            fprintf(dotFile, "node%zu -> node%zu [color=\"#00000000\"]", idx, idx+1);
+
         if (list->prev[idx] == -1)
-            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#AAAAAA\"]", idx, list->next[idx]);
-        else
-            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#20EE20\"]", idx, list->next[idx]);
+            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#AAAAAA\"]\n", idx, list->next[idx]);
+        else {
+            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#20EE20\"]\n", idx, list->next[idx]);
+            fprintf(dotFile, "node%zu -> node%zu [constraint=false,color=\"#FF4420\"]\n", idx, list->prev[idx]);
+        }
+
     }
 
     fprintf(dotFile, "}\n");
     fclose(dotFile);
 
-    sprintf(buffer, "dot logs/dot/listDump_%zu.dot -Tpng -o logs/img/dumpImg_%zu.png",
+    sprintf(buffer, "dot logs/dot/listDump_%zu.dot -Tsvg -o logs/img/dumpImg_%zu.svg",
             imgNumber, imgNumber);
     system(buffer);
 
-    logPrint(L_ZERO, 0, "<img src=\"img/dumpImg_%zu.png\" width=87%%>", imgNumber);
-    logPrint(L_ZERO, 0, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n", list);
+    logPrint(L_ZERO, 0, "<img src=\"img/dumpImg_%zu.svg\" width=87%%>", imgNumber);
+    logPrint(L_ZERO, 0, "\n<hr>\n");
     logFlush();
 
     imgNumber++;

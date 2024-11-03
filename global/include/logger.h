@@ -42,6 +42,9 @@ enum status logPrintWithTime(enum LogLevel level, bool copyToStderr, const char*
 /// @brief Print in log file
 enum status logPrint(enum LogLevel level, bool copyToStderr, const char* fmt, ...);
 
+/// @brief Print with color in html mode
+enum status logPrintColor(enum LogLevel level, const char *color, const char *background, const char *fmt, ...);
+
 /// @brief Print in log file with place in code
 #define LOG_PRINT(level, ...)                                                                       \
     do {                                                                                            \

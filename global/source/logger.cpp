@@ -79,7 +79,7 @@ enum status logOpen(const char *fileName, enum LogMode mode) {
     if (!logger.logFile) return ERROR;
 
     if (mode == L_HTML_MODE)
-        fprintf(logger.logFile, "<pre>\n");
+        fprintf(logger.logFile, "<!DOCTYPE html>\n<pre>\n");
 
     fprintf(logger.logFile, "------------------------------------------\n");
     logTime();
@@ -159,3 +159,22 @@ enum status logPrint(enum LogLevel level, bool copyToStderr, const char* fmt, ..
     return SUCCESS;
 }
 
+enum status logPrintColor(enum LogLevel level, const char *color, const char *background, const char *fmt, ...) {
+    MY_ASSERT(logger.logFile, abort());
+    if (level > logger.logLevel)
+        return SUCCESS;
+
+    va_list args;
+    va_start(args, fmt);
+
+    if (logger.logMode == L_HTML_MODE)
+        fprintf(logger.logFile, "<span style=\"color:%s; background-color:%s\">", color, background);
+
+    vfprintf(logger.logFile, fmt, args);
+
+    if (logger.logMode == L_HTML_MODE)
+        fprintf(logger.logFile, "</span>");
+
+    va_end(args);
+    return SUCCESS;
+}

@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 const int64_t LIST_POISON = 0x0FACEFABDDFAC;
-const size_t MIN_LIST_RESERVED = 5;
+const size_t MIN_LIST_RESERVED = 10;
 const size_t SIZE_MULTIPLIER = 2;
 enum listStatus {
     LIST_SUCCESS = 0,

@@ -13,41 +13,26 @@ int main() {
     listCtor(&list, sizeof(int));
     listDump(&list);
     int a = 2, b = 3, c = 4;
-    listPushBack(&list, &c);
-    listDump(&list);
-
-    listPushFront(&list, &a);
-    listDump(&list);
+    listClear(&list);
 
     listPushFront(&list, &b);
+    listPushFront(&list, &c);
     listDump(&list);
 
-    for (listIterator_t it = listFront(&list); it != NULL_LIST_IT; it = listNext(&list, it)) {
-        printf("it = %ld: %d\n", it, *(int *)listGet(&list, it));
-    }
+    listPushBack(&list, &a);
+    listInsertAfter(&list, 1, &a);
 
-    listPopBack(&list);
     listDump(&list);
 
-    for (listIterator_t it = listFront(&list); it != NULL_LIST_IT; it = listNext(&list, it)) {
-        printf("it = %ld: %d\n", it, *(int *)listGet(&list, it));
-    }
+    listIterator_t it = listFind(&list, &b);
+    listInsertBefore(&list, it, &c);
 
-    listPopBack(&list);
     listDump(&list);
 
-    for (listIterator_t it = listFront(&list); it != NULL_LIST_IT; it = listNext(&list, it)) {
-        printf("it = %ld: %d\n", it, *(int *)listGet(&list, it));
-    }
-
-    listPopBack(&list);
+    listRemove(&list, 3);
     listDump(&list);
 
-    for (listIterator_t it = listFront(&list); it != NULL_LIST_IT; it = listNext(&list, it)) {
-        printf("it = %ld: %d\n", it, *(int *)listGet(&list, it));
-    }
-
-    listPopBack(&list);
+    listClear(&list);
     listDump(&list);
 
     listDtor(&list);
