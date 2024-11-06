@@ -517,6 +517,8 @@ enum listStatus listDump(cList_t *list) {
 
     }
 
+    fprintf(dotFile, "nodeFree [shape = Mrecord, style = filled, weight = 20, label = \"Free | next = %d\"];\n"
+                     "nodeFree -> node%d [color = \"#111111\"];\n", list->free, list->free);
     fprintf(dotFile, "}\n");
     fclose(dotFile);
 
