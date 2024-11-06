@@ -480,21 +480,21 @@ enum listStatus listDump(cList_t *list) {
     sprintf(buffer, "logs/dot/listDump_%zu.dot", imgNumber);
     FILE *dotFile = fopen(buffer, "w");
     fprintf(dotFile, "digraph {\n");
-    fprintf(dotFile, "rankdir = LR;\n");
-    fprintf(dotFile, "graph [splines=spline];\n");
+    fprintf(dotFile, "\trankdir = LR;\n");
+    fprintf(dotFile, "\tgraph [splines=ortho];\n");
 
-    fprintf(dotFile, "nodeHeader [shape=Mrecord, weight=10, label=\"Info | size = %d | capacity = %d\"]\n",
+    fprintf(dotFile, "\tnodeHeader [shape=Mrecord, weight=10, label=\"Info | size = %d | capacity = %d\"]\n",
             list->size, list->reserved);
 
-    fprintf(dotFile, "node0 [shape=Mrecord, weight=10, label=\"NULL_ELEMENT | (head) next = %d | (tale) prev = %d\"",
+    fprintf(dotFile, "\tnode0 [shape=Mrecord, weight=10, label=\"NULL_ELEMENT | (head) next = %d | (tale) prev = %d\"",
             list->next[0], list->prev[0]);
-    fprintf(dotFile, "color=\"#000000\"];\n");
+    fprintf(dotFile, "\tcolor=\"#000000\"];\n");
 
-    fprintf(dotFile, "subgraph cluster_Data {\n");
-    fprintf(dotFile, "label = \"Elements\";\n");
-    fprintf(dotFile, "bgcolor=\"#ccfdf9\";\n");
+    fprintf(dotFile, "\tsubgraph cluster_Data {\n");
+    fprintf(dotFile, "\t\tlabel = \"Elements\";\n");
+    fprintf(dotFile, "\t\tbgcolor=\"#ccfdf9\";\n");
     for (int32_t idx = 1; idx <= list->reserved; idx++) {
-        fprintf(dotFile, "node%d [shape=Mrecord, style=filled,weight=10, label=\"elem #%d | next = %d | prev = %d | val = %d\",",
+        fprintf(dotFile, "\t\tnode%d [shape=Mrecord, style=filled,weight=10, label=\"elem #%d | next = %d | prev = %d | val = %d\",",
                 idx, idx, list->next[idx], list->prev[idx], *(int32_t *)((char *)list->data + idx * list->elemSize) );
 
         if (list->prev[idx] == -1)
@@ -502,23 +502,23 @@ enum listStatus listDump(cList_t *list) {
         else
             fprintf(dotFile, "fillcolor=\"white\"];\n");
     }
-    fprintf(dotFile, "}\n");
+    fprintf(dotFile, "\t}\n");
 
     for (int32_t idx = 0; idx <= list->reserved; idx++) {
         if (idx != list->reserved)
-            fprintf(dotFile, "node%d -> node%d [color=\"#00000000\"]", idx, idx+1);
+            fprintf(dotFile, "\tnode%d -> node%d [color=\"#00000000\"];\n", idx, idx+1);
 
         if (list->prev[idx] == -1)
-            fprintf(dotFile, "node%d -> node%d [constraint=false,color=\"#AAAAAA\"]\n", idx, list->next[idx]);
+            fprintf(dotFile, "\tnode%d -> node%d [constraint=false,color=\"#AAAAAA\"];\n", idx, list->next[idx]);
         else {
-            fprintf(dotFile, "node%d -> node%d [constraint=false,color=\"#20EE20\"]\n", idx, list->next[idx]);
-            fprintf(dotFile, "node%d -> node%d [constraint=false,color=\"#FF4420\"]\n", idx, list->prev[idx]);
+            fprintf(dotFile, "\tnode%d -> node%d [constraint=false,color=\"#20EE20\"];\n", idx, list->next[idx]);
+            fprintf(dotFile, "\tnode%d -> node%d [constraint=false,color=\"#FF4420\"];\n", idx, list->prev[idx]);
         }
 
     }
 
-    fprintf(dotFile, "nodeFree [shape = Mrecord, style = filled, weight = 20, label = \"Free | next = %d\"];\n"
-                     "nodeFree -> node%d [color = \"#111111\"];\n", list->free, list->free);
+    fprintf(dotFile, "\tnodeFree [shape = Mrecord, style = filled, weight = 20, label = \"Free | next = %d\"];\n"
+                     "\tnodeFree -> node%d [color = \"#111111\"];\n", list->free, list->free);
     fprintf(dotFile, "}\n");
     fclose(dotFile);
 
