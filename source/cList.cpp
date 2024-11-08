@@ -10,12 +10,12 @@
 const size_t INTERNAL_BUFFER_SIZE = 100;
 
 static bool checkIfInvalidIterator(cList_t *list, listIterator_t iter) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     return (iter < 0 || iter > list->reserved);
 }
 
 static enum listStatus listRealloc(cList_t *list) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     LIST_ASSERT(list);
     logPrint(L_DEBUG, 0, "Reallocating list [%p]: %d -> %d\n", list, list->reserved, list->reserved * 2);
 
@@ -66,7 +66,7 @@ static enum listStatus listRealloc(cList_t *list) {
 }
 
 enum listStatus listCtor(cList_t *list, size_t elemSize, listPrintFunction_t sPrint) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     logPrint(L_DEBUG, 0, "Constructing list [%p]\n", list);
 
     list->size     = 0;
@@ -103,7 +103,7 @@ enum listStatus listCtor(cList_t *list, size_t elemSize, listPrintFunction_t sPr
 }
 
 enum listStatus listDtor(cList_t *list) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     LIST_ASSERT(list);
     logPrint(L_DEBUG, 0, "Destructing list [%p]\n", list);
     free(list->data); list->data = NULL;
@@ -115,7 +115,7 @@ enum listStatus listDtor(cList_t *list) {
 }
 
 enum listStatus listClear(cList_t *list) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     LIST_ASSERT(list);
     logPrint(L_DEBUG, 0, "Clearing list [%p]\n", list);
 
@@ -137,22 +137,22 @@ enum listStatus listClear(cList_t *list) {
 }
 
 listIterator_t  listFront(cList_t *list) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     return (listIterator_t) list->next[0];
 }
 
 listIterator_t  listBack(cList_t *list) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     return (listIterator_t) list->prev[0];
 }
 
 listIterator_t  listNext(cList_t *list, listIterator_t iter) {
-    MY_ASSERT(list, abort());
-    MY_ASSERT(iter, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
+    MY_ASSERT(iter, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     if (checkIfInvalidIterator(list, iter)) {
@@ -166,8 +166,8 @@ listIterator_t  listNext(cList_t *list, listIterator_t iter) {
 }
 
 listIterator_t  listPrev(cList_t *list, listIterator_t iter) {
-    MY_ASSERT(list, abort());
-    MY_ASSERT(iter, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
+    MY_ASSERT(iter, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     if (checkIfInvalidIterator(list, iter)) {
@@ -181,8 +181,8 @@ listIterator_t  listPrev(cList_t *list, listIterator_t iter) {
 }
 
 listIterator_t  listPushFront(cList_t *list, const void *elem) {
-    MY_ASSERT(list, abort());
-    MY_ASSERT(elem, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
+    MY_ASSERT(elem, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Pushing element[%p] to front of list[%p]\n", elem, list);
@@ -193,8 +193,8 @@ listIterator_t  listPushFront(cList_t *list, const void *elem) {
 }
 
 listIterator_t  listPushBack(cList_t *list, const void *elem) {
-    MY_ASSERT(list, abort());
-    MY_ASSERT(elem, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
+    MY_ASSERT(elem, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Pushing element[%p] to back of list[%p]\n", elem, list);
@@ -205,7 +205,7 @@ listIterator_t  listPushBack(cList_t *list, const void *elem) {
 }
 
 listIterator_t listPopFront(cList_t *list) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Popping element at front of list[%p]\n", list);
@@ -218,7 +218,7 @@ listIterator_t listPopFront(cList_t *list) {
 }
 
 listIterator_t listPopBack(cList_t *list) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Popping element at back of list[%p]\n", list);
@@ -231,7 +231,7 @@ listIterator_t listPopBack(cList_t *list) {
 }
 
 enum listStatus listRemove(cList_t *list, listIterator_t iter) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     LIST_ASSERT(list);
 
     if (checkIfInvalidIterator(list, iter)) {
@@ -267,8 +267,8 @@ enum listStatus listRemove(cList_t *list, listIterator_t iter) {
 
 
 listIterator_t listFind(cList_t *list, const void *elem) {
-    MY_ASSERT(list, abort());
-    MY_ASSERT(elem, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
+    MY_ASSERT(elem, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     listIterator_t iter = list->next[0];
@@ -280,8 +280,8 @@ listIterator_t listFind(cList_t *list, const void *elem) {
 
 /// @brief insert After iterator, return iterator to inserted elem
 listIterator_t listInsertAfter(cList_t *list, listIterator_t iter, const void *elem) {
-    MY_ASSERT(list, abort());
-    MY_ASSERT(elem, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
+    MY_ASSERT(elem, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     logPrint(L_EXTRA, 0, "Inserting elem[%p] in list[%p] after [%d] iterator\n", elem, list, iter);
@@ -314,16 +314,16 @@ listIterator_t listInsertAfter(cList_t *list, listIterator_t iter, const void *e
 
 /// @brief insert Before iterator, return iterator to inserted elem
 listIterator_t listInsertBefore(cList_t *list, listIterator_t iter, const void *elem) {
-    MY_ASSERT(list, abort());
-    MY_ASSERT(elem, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
+    MY_ASSERT(elem, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, INVALID_LIST_IT);
 
     return listInsertAfter(list, list->prev[iter], elem);
 }
 
 void *listGet(cList_t *list, listIterator_t iter) {
-    MY_ASSERT(list, abort());
-    MY_ASSERT(iter, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
+    MY_ASSERT(iter, exit(LIST_NULL_PTR_ERROR));
     LIST_CUSTOM_ASSERT(list, NULL);
 
     if (checkIfInvalidIterator(list, iter)) {
@@ -342,7 +342,7 @@ void *listGet(cList_t *list, listIterator_t iter) {
 }
 
 enum listStatus listVerify(cList_t *list) {
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     /* CHECKING BASIC LOGIC*/
     if (list->reserved < 0) {
         logPrint(L_ZERO, 1, "Negative reserved elements in list[%p]: %ld\n", list, list->reserved);
@@ -501,7 +501,7 @@ enum listStatus listDump(cList_t *list, const char *callMessage) {
     static size_t imgNumber = 0;
     char buffer[INTERNAL_BUFFER_SIZE] = "";
 
-    MY_ASSERT(list, abort());
+    MY_ASSERT(list, exit(LIST_NULL_PTR_ERROR));
     if (getLogLevel() < L_DEBUG)
         return LIST_SUCCESS;
 

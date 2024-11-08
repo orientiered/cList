@@ -3,6 +3,7 @@
 #include <list>
 #include "error_debug.h"
 #include "logger.h"
+
 #include "cList.h"
 
 int doublePrint(char *buffer, const void* a) {

@@ -1,12 +1,15 @@
 #ifndef C_LIST_H
 #define C_LIST_H
 
+#define LIST_VERIFICATION 1
+
 #include <stdint.h>
 
 const int64_t LIST_POISON = 0x0FACEFABDDFAC;
 const size_t MIN_LIST_RESERVED = 4;
 const size_t SIZE_MULTIPLIER = 2;
 enum listStatus {
+    LIST_NULL_PTR_ERROR = -1,
     LIST_SUCCESS = 0,
     LIST_ERROR   = 1,
     LIST_MEMORY_ERROR,     ///< Calloc failed; Data, prev or next is NULL
@@ -109,7 +112,8 @@ listIterator_t listInsertBefore(cList_t *list, listIterator_t iter, const void *
 /// @return Pointer to value, NULL otherwise
 void *listGet(cList_t *list, listIterator_t iter);
 
-#ifndef NDEBUG
+#if defined(LIST_VERIFICATION) && !defined(NDEBUG)
+
 # define LIST_ASSERT(list)                                                                          \
     do {                                                                                            \
         enum listStatus status = listVerify(list);                                                  \
