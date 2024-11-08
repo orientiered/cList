@@ -414,15 +414,14 @@ enum listStatus listVerify(cList_t *list) {
     for (;iter != NULL_LIST_IT && visitedCounter < list->reserved + 5;iter = list->next[iter]) {
         if (list->next[iter] < 0 || list->next[iter] > list->reserved) {
             logPrint(L_ZERO, 1, "Bad iterator in next sequence in list [%p]:\n"
-                                "\titer = %d\n"
+                                "\tnext[iter] = %d\n"
                                 "\tmaxIter = capacity = %d\n",
-                                list, iter, list->reserved);
+                                list, list->next[iter], list->reserved);
             return LIST_NEXT_LINK_ERROR;
         }
         if (list->prev[list->next[iter]] != iter) {
             logPrint(L_ZERO, 1, "prev[next[iter]] != iter in list [%p]:\n"
-                                "\titer = %d\n"
-                                "\tnext[iter] = %d\n"
+                                "\tnext[%d] = %d\n"
                                 "\tprev[next[iter]] = %d != %d\n",
                                 list, iter, list->next[iter], list->prev[list->next[iter]], iter);
             return LIST_NEXT_LINK_ERROR;

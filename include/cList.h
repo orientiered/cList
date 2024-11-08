@@ -110,12 +110,12 @@ listIterator_t listInsertBefore(cList_t *list, listIterator_t iter, const void *
 void *listGet(cList_t *list, listIterator_t iter);
 
 #ifndef NDEBUG
-# define LIST_ASSERT(list)                                                                           \
+# define LIST_ASSERT(list)                                                                          \
     do {                                                                                            \
         enum listStatus status = listVerify(list);                                                  \
         if (status != LIST_SUCCESS) {                                                               \
-            logPrint(L_ZERO, 1, "%s:%d, %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__);            \
-            logPrint(L_ZERO, 1, "List[%p] error occurred. Error code = %d\n", list, status);        \
+            logPrint(L_ZERO, 1, "<h2>%s:%d, %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__);        \
+            logPrint(L_ZERO, 1, "List[%p] error occurred. Error code = %d</h2>\n", list, status);   \
             LIST_DUMP(list, "assert failed");                                                       \
             return status;                                                                          \
         }                                                                                           \
@@ -126,8 +126,8 @@ void *listGet(cList_t *list, listIterator_t iter);
     do {                                                                                            \
         enum listStatus status = listVerify(list);                                                  \
         if (status != LIST_SUCCESS) {                                                               \
-            logPrint(L_ZERO, 1, "%s:%d, %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__);            \
-            logPrint(L_ZERO, 1, "List[%p] error occurred. Error code = %d\n", list, status);        \
+            logPrint(L_ZERO, 1, "<h2>%s:%d, %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__);        \
+            logPrint(L_ZERO, 1, "List[%p] error occurred. Error code = %d</h2>\n", list, status);   \
             LIST_DUMP(list, "assert failed");                                                       \
             return ERR_VALUE;                                                                       \
         }                                                                                           \
